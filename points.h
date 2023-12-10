@@ -1,5 +1,5 @@
-#ifndef utility_h
-#define utility_h
+#ifndef points_h
+#define points_h
 
 #include <iostream>
 #include <vector>
@@ -81,4 +81,4 @@ struct AS_Point{
 };
 
 
-#endif /* utility_h */
+#endif

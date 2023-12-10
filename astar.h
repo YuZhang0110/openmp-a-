@@ -1,7 +1,7 @@
-#ifndef A_STAR_H
-#define A_STAR_H
+#ifndef ASTAR_H
+#define ASTAR_H
 
-#include "utility.h"
+#include "points.h"
 using namespace std;
 
 

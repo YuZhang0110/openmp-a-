@@ -1,4 +1,4 @@
-#include "A_Star.h"
+#include "astar.h"
 
 using namespace std;
 
@@ -174,7 +174,7 @@ int main(int argc, const char * argv[]) {
 
 	cout << "Program start: core number: " << omp_get_num_threads() << endl;
     // Change the filename here if you want to run Part1 on a different map file
-    string file_name = "large_map2.txt";
+    string file_name = "maps/map2.txt";
     int start_x, start_y, end_x, end_y;
     handle_infile(file_name, map_v, way_points, fully_way_points, start_x, start_y, end_x, end_y);
 
