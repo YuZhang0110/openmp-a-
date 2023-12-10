@@ -168,7 +168,77 @@ public:
 		way_points_map = in_way_points_map;
         flag = in_flag;
     }
-    
+    void exploreNeighbors(const AS_Point& cur, int old_health, int cur_cost) {
+		if (cur.x - 1 >= 0){
+			AS_Point tmp(cur.x - 1, cur.y);
+			omp_set_lock(&(explored_lock[cur.x - 1][cur.y][cur.health]));
+			if (explored[cur.x - 1][cur.y][cur.health] > cur.cost + cur_cost + getDis(tmp)
+				&& (map_v[cur.x - 1][cur.y][cur.health]).val != 'X' && (map_v[cur.x - 1][cur.y][cur.health]).val != 'O'){
+				
+				explored[cur.x - 1][cur.y][cur.health] = cur.cost + cur_cost + getDis(tmp);
+				omp_set_lock(&queue_lock);
+				s.push(AS_Point(cur.x - 1, cur.y, cur.cost + cur_cost, getDis(tmp), cur.health, 'N'));
+				omp_unset_lock(&queue_lock);
+				(map_v[cur.x - 1][cur.y][cur.health]).pre_dir = 'N';
+				(map_v[cur.x - 1][cur.y][cur.health]).pre_health = old_health;
+			}
+			omp_unset_lock(&(explored_lock[cur.x - 1][cur.y][cur.health]));
+		}
+		if (cur.y - 1 >= 0){
+			AS_Point tmp(cur.x, cur.y - 1);
+			omp_set_lock(&(explored_lock[cur.x][cur.y - 1][cur.health]));
+			if (explored[cur.x][cur.y - 1][cur.health] > cur.cost + cur_cost + getDis(tmp)
+				&& (map_v[cur.x][cur.y - 1][cur.health]).val != 'X' && (map_v[cur.x][cur.y - 1][cur.health]).val != 'O'){
+				
+				explored[cur.x][cur.y - 1][cur.health] = cur.cost + cur_cost + getDis(tmp);
+				omp_set_lock(&queue_lock);
+				s.push(AS_Point(cur.x, cur.y - 1, cur.cost + cur_cost, getDis(tmp), cur.health, 'W'));
+				omp_unset_lock(&queue_lock);
+				(map_v[cur.x][cur.y - 1][cur.health]).pre_dir = 'W';
+				(map_v[cur.x][cur.y - 1][cur.health]).pre_health = old_health;
+				
+			}
+			omp_unset_lock(&(explored_lock[cur.x][cur.y - 1][cur.health]));
+		}
+
+		if (cur.y + 1 < columns){
+			AS_Point tmp(cur.x, cur.y + 1);
+			omp_set_lock(&(explored_lock[cur.x][cur.y + 1][cur.health]));
+			if (explored[cur.x][cur.y + 1][cur.health] > cur.cost + cur_cost + getDis(tmp)
+				&& (map_v[cur.x][cur.y + 1][cur.health]).val != 'X' && (map_v[cur.x][cur.y + 1][cur.health]).val != 'O'){
+				
+				explored[cur.x][cur.y + 1][cur.health] = cur.cost + cur_cost + getDis(tmp);
+				omp_set_lock(&queue_lock);
+				s.push(AS_Point(cur.x, cur.y + 1, cur.cost + cur_cost, getDis(tmp), cur.health, 'E'));
+				omp_unset_lock(&queue_lock);
+				(map_v[cur.x][cur.y + 1][cur.health]).pre_dir = 'E';
+				(map_v[cur.x][cur.y + 1][cur.health]).pre_health = old_health;
+				
+			}
+			omp_unset_lock(&(explored_lock[cur.x][cur.y + 1][cur.health]));
+		}
+		if (cur.x + 1 < rows){
+			AS_Point tmp(cur.x + 1, cur.y);
+			omp_set_lock(&(explored_lock[cur.x + 1][cur.y][cur.health]));
+			if (explored[cur.x + 1][cur.y][cur.health] > cur.cost + cur_cost + getDis(tmp)
+				&& (map_v[cur.x + 1][cur.y][cur.health]).val != 'X' && (map_v[cur.x + 1][cur.y][cur.health]).val != 'O'){
+				
+				explored[cur.x + 1][cur.y][cur.health] = cur.cost + cur_cost + getDis(tmp);
+				omp_set_lock(&queue_lock);
+				s.push(AS_Point(cur.x + 1, cur.y, cur.cost + cur_cost, getDis(tmp), cur.health, 'S'));
+				omp_unset_lock(&queue_lock);
+				(map_v[cur.x + 1][cur.y][cur.health]).pre_dir = 'S';
+				(map_v[cur.x + 1][cur.y][cur.health]).pre_health = old_health;
+				
+			}
+			omp_unset_lock(&(explored_lock[cur.x + 1][cur.y][cur.health]));
+    	}
+	}
+
+	bool isDestinationReached(const AS_Point& cur) {
+        return cur.x == end.x && cur.y == end.y;
+    }
+
 	void search_path(){
         map_v[start.x][start.y][5].pre_dir = 'X';
         s.push(start);
@@ -209,80 +279,14 @@ public:
 				node_examine++;
 				omp_unset_lock(&node_examine_lock);
 
-				if (cur.x == end.x && cur.y == end.y){
+				if (isDestinationReached(cur)){
 					omp_set_lock(&final_health_lock);
 					final_health = cur.health;
 					omp_unset_lock(&final_health_lock);
 					break;
 				}
 
-				// sleep!!!!
-				//usleep(300);
-
-				if (cur.x - 1 >= 0){
-					AS_Point tmp(cur.x - 1, cur.y);
-					omp_set_lock(&(explored_lock[cur.x - 1][cur.y][cur.health]));
-					if (explored[cur.x - 1][cur.y][cur.health] > cur.cost + cur_cost + getDis(tmp)
-						&& (map_v[cur.x - 1][cur.y][cur.health]).val != 'X' && (map_v[cur.x - 1][cur.y][cur.health]).val != 'O'){
-						
-						explored[cur.x - 1][cur.y][cur.health] = cur.cost + cur_cost + getDis(tmp);
-						omp_set_lock(&queue_lock);
-						s.push(AS_Point(cur.x - 1, cur.y, cur.cost + cur_cost, getDis(tmp), cur.health, 'N'));
-						omp_unset_lock(&queue_lock);
-						(map_v[cur.x - 1][cur.y][cur.health]).pre_dir = 'N';
-						(map_v[cur.x - 1][cur.y][cur.health]).pre_health = old_health;
-					}
-					omp_unset_lock(&(explored_lock[cur.x - 1][cur.y][cur.health]));
-				}
-				if (cur.y - 1 >= 0){
-					AS_Point tmp(cur.x, cur.y - 1);
-					omp_set_lock(&(explored_lock[cur.x][cur.y - 1][cur.health]));
-					if (explored[cur.x][cur.y - 1][cur.health] > cur.cost + cur_cost + getDis(tmp)
-						&& (map_v[cur.x][cur.y - 1][cur.health]).val != 'X' && (map_v[cur.x][cur.y - 1][cur.health]).val != 'O'){
-						
-						explored[cur.x][cur.y - 1][cur.health] = cur.cost + cur_cost + getDis(tmp);
-						omp_set_lock(&queue_lock);
-						s.push(AS_Point(cur.x, cur.y - 1, cur.cost + cur_cost, getDis(tmp), cur.health, 'W'));
-						omp_unset_lock(&queue_lock);
-						(map_v[cur.x][cur.y - 1][cur.health]).pre_dir = 'W';
-						(map_v[cur.x][cur.y - 1][cur.health]).pre_health = old_health;
-					   
-					}
-					omp_unset_lock(&(explored_lock[cur.x][cur.y - 1][cur.health]));
-				}
-
-				if (cur.y + 1 < columns){
-					AS_Point tmp(cur.x, cur.y + 1);
-					omp_set_lock(&(explored_lock[cur.x][cur.y + 1][cur.health]));
-					if (explored[cur.x][cur.y + 1][cur.health] > cur.cost + cur_cost + getDis(tmp)
-						&& (map_v[cur.x][cur.y + 1][cur.health]).val != 'X' && (map_v[cur.x][cur.y + 1][cur.health]).val != 'O'){
-						
-						explored[cur.x][cur.y + 1][cur.health] = cur.cost + cur_cost + getDis(tmp);
-						omp_set_lock(&queue_lock);
-						s.push(AS_Point(cur.x, cur.y + 1, cur.cost + cur_cost, getDis(tmp), cur.health, 'E'));
-						omp_unset_lock(&queue_lock);
-						(map_v[cur.x][cur.y + 1][cur.health]).pre_dir = 'E';
-						(map_v[cur.x][cur.y + 1][cur.health]).pre_health = old_health;
-						
-					}
-					omp_unset_lock(&(explored_lock[cur.x][cur.y + 1][cur.health]));
-				}
-				if (cur.x + 1 < rows){
-					AS_Point tmp(cur.x + 1, cur.y);
-					omp_set_lock(&(explored_lock[cur.x + 1][cur.y][cur.health]));
-					if (explored[cur.x + 1][cur.y][cur.health] > cur.cost + cur_cost + getDis(tmp)
-						&& (map_v[cur.x + 1][cur.y][cur.health]).val != 'X' && (map_v[cur.x + 1][cur.y][cur.health]).val != 'O'){
-						
-						explored[cur.x + 1][cur.y][cur.health] = cur.cost + cur_cost + getDis(tmp);
-						omp_set_lock(&queue_lock);
-						s.push(AS_Point(cur.x + 1, cur.y, cur.cost + cur_cost, getDis(tmp), cur.health, 'S'));
-						omp_unset_lock(&queue_lock);
-						(map_v[cur.x + 1][cur.y][cur.health]).pre_dir = 'S';
-						(map_v[cur.x + 1][cur.y][cur.health]).pre_health = old_health;
-						
-					}
-					omp_unset_lock(&(explored_lock[cur.x + 1][cur.y][cur.health]));
-				}
+				exploreNeighbors(cur, old_health, cur_cost);
 
 			}// end of while (1)
 		} // end parallel do
