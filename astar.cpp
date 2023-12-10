@@ -65,7 +65,7 @@ void handle_waypoints(vector<vector<Location>> in_map_v, vector<Point> way_point
 	// Way point timer
 	double waypoint_start = omp_get_wtime();
 
-//#pragma omp parallel
+#pragma omp parallel
 	{
 		while (1){
 			omp_set_lock(&way_point_lock);
@@ -160,7 +160,7 @@ int main(int argc, const char * argv[]) {
 		exit(1);
 	}
 	int num_threads = atoi(argv[1]);
-	//omp_set_num_threads(num_threads);
+	omp_set_num_threads(num_threads);
 
     vector<vector<Location>> map_v;
 
