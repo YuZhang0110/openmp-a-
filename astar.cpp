@@ -51,7 +51,24 @@ void handle_infile(string& file_name, vector<vector<Location>>& map_v,
     }
 }
 
+void initialize_locks(omp_lock_t &way_point_lock, omp_lock_t &way_point_map_lock) {
+    omp_init_lock(&way_point_lock);
+    omp_init_lock(&way_point_map_lock);
+}
 
+int calculate_path_cost(vector<vector<Location>>& map_v, int end_x, int end_y) {
+    int path_cost = 0, x = end_x, y = end_y;
+    while (x >= 0 && y >= 0 && map_v[x][y].pre_dir != 'X') {
+        path_cost += (map_v[x][y].val == '*') ? 3 : 1;
+        switch (map_v[x][y].pre_dir) {
+            case 'N': x++; break;
+            case 'E': y--; break;
+            case 'W': y++; break;
+            case 'S': x--; break;
+        }
+    }
+    return path_cost;
+}
 
 // For waypoints
 void handle_waypoints(vector<vector<Location>> in_map_v, vector<Point> way_points, unordered_map<Point, int>& way_points_map, int end_x, int end_y){
@@ -59,9 +76,7 @@ void handle_waypoints(vector<vector<Location>> in_map_v, vector<Point> way_point
 	int columns = (int)in_map_v[0].size();
 	
 	omp_lock_t way_point_lock, way_point_map_lock;
-	omp_init_lock(&way_point_lock);
-	omp_init_lock(&way_point_map_lock);
-
+	initialize_locks(way_point_lock, way_point_map_lock);
 	// Way point timer
 	double waypoint_start = omp_get_wtime();
 
@@ -129,17 +144,8 @@ void handle_waypoints(vector<vector<Location>> in_map_v, vector<Point> way_point
 				}
 			} // end while
 
-			
+			path_cost = calculate_path_cost(map_v, end_x, end_y);
 			int x = end_x, y = end_y;
-			while (x >= 0 && y >= 0 && map_v[x][y].pre_dir != 'X'){
-				if (map_v[x][y].val == ' ') path_cost++;
-				else if (map_v[x][y].val == '*') path_cost += 3;
-				
-				if (map_v[x][y].pre_dir == 'N') x++;
-				else if (map_v[x][y].pre_dir == 'W') y++;
-				else if (map_v[x][y].pre_dir == 'E') y--;
-				else x--;
-			}
 
 			// insert path_cost into map
 			omp_set_lock(&way_point_map_lock);
