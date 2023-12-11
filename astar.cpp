@@ -51,7 +51,34 @@ void handle_infile(string& file_name, vector<vector<Location>>& map_v,
     }
 }
 
+void updateCoordinates(int& x, int& y, char direction) {
+	switch (direction) {
+		case 'N': x++; break;
+		case 'W': y++; break;
+		case 'E': y--; break;
+		default:  x--; break; // Optionally handle unexpected direction
+	}
+}
 
+void exploreNeighbors(const UCS_Point& cur, priority_queue<UCS_Point, vector<UCS_Point>, comp>& pq, 
+                      vector<vector<int>>& explored, vector<vector<Location>>& map_v, int rows, int columns, int cur_cost) {
+    static const vector<pair<int, int>> directions = {{1, 0}, {0, 1}, {0, -1}, {-1, 0}};
+    static const vector<char> dirs = {'S', 'E', 'W', 'N'};
+
+    for (size_t i = 0; i < directions.size(); ++i) {
+        int new_x = cur.x + directions[i].first;
+        int new_y = cur.y + directions[i].second;
+        char direction = dirs[i];
+
+        if (new_x >= 0 && new_x < rows && new_y >= 0 && new_y < columns 
+            && explored[new_x][new_y] > cur.cost + cur_cost
+            && map_v[new_x][new_y].val != 'X') {
+            explored[new_x][new_y] = cur.cost + cur_cost;
+            pq.push(UCS_Point(new_x, new_y, cur.cost + cur_cost));
+            map_v[new_x][new_y].pre_dir = direction;
+        }
+    }
+}
 
 // For waypoints
 void handle_waypoints(vector<vector<Location>> in_map_v, vector<Point> way_points, unordered_map<Point, int>& way_points_map, int end_x, int end_y){
@@ -96,49 +123,15 @@ void handle_waypoints(vector<vector<Location>> in_map_v, vector<Point> way_point
 				if (explored[cur.x][cur.y] != cur.cost) continue;
 				if (cur.x == end_x && cur.y == end_y) break;
 
-				int cur_cost = 1;
-				if ((map_v[cur.x][cur.y]).val == '*') cur_cost = 3;
-				
-				
-				if (cur.x + 1 < rows && explored[cur.x + 1][cur.y] > cur.cost + cur_cost
-					&& (map_v[cur.x + 1][cur.y]).val != 'X'){
-					explored[cur.x + 1][cur.y] = cur.cost + cur_cost;
-					pq.push(UCS_Point(cur.x + 1, cur.y, cur.cost + cur_cost));
-					(map_v[cur.x + 1][cur.y]).pre_dir = 'S';
-				}
-				if (cur.y + 1 < columns && explored[cur.x][cur.y + 1] > cur.cost + cur_cost
-					&& (map_v[cur.x][cur.y + 1]).val != 'X'){
-					explored[cur.x][cur.y + 1] = cur.cost + cur_cost;
-					pq.push(UCS_Point(cur.x, cur.y + 1, cur.cost + cur_cost));
-					
-					(map_v[cur.x][cur.y + 1]).pre_dir = 'E';
-				}
-				if (cur.y - 1 >= 0 && explored[cur.x][cur.y - 1] > cur.cost + cur_cost
-					&& (map_v[cur.x][cur.y - 1]).val != 'X'){
-					explored[cur.x][cur.y - 1] = cur.cost + cur_cost;
-					pq.push(UCS_Point(cur.x, cur.y - 1, cur.cost + cur_cost));
-					
-					(map_v[cur.x][cur.y - 1]).pre_dir = 'W';
-				}
-				if (cur.x - 1 >= 0 && explored[cur.x - 1][cur.y] > cur.cost + cur_cost
-					&& (map_v[cur.x - 1][cur.y]).val != 'X'){
-					explored[cur.x - 1][cur.y] = cur.cost + cur_cost;
-					pq.push(UCS_Point(cur.x - 1, cur.y, cur.cost + cur_cost));
-					
-					(map_v[cur.x - 1][cur.y]).pre_dir = 'N';
-				}
+				int cur_cost = (map_v[cur.x][cur.y].val == '*') ? 3 : 1;
+				exploreNeighbors(cur, pq, explored, map_v, rows, columns, cur_cost);
 			} // end while
 
-			
+
 			int x = end_x, y = end_y;
 			while (x >= 0 && y >= 0 && map_v[x][y].pre_dir != 'X'){
-				if (map_v[x][y].val == ' ') path_cost++;
-				else if (map_v[x][y].val == '*') path_cost += 3;
-				
-				if (map_v[x][y].pre_dir == 'N') x++;
-				else if (map_v[x][y].pre_dir == 'W') y++;
-				else if (map_v[x][y].pre_dir == 'E') y--;
-				else x--;
+				path_cost += (map_v[x][y].val == ' ') ? 1 : (map_v[x][y].val == '*') ? 3 : 0;
+				updateCoordinates(x, y, map_v[x][y].pre_dir);
 			}
 
 			// insert path_cost into map
@@ -150,8 +143,6 @@ void handle_waypoints(vector<vector<Location>> in_map_v, vector<Point> way_point
 	double waypoint_end = omp_get_wtime();
 	cout << "Finish generating waypoints: " << 1000 * (waypoint_end - waypoint_start) << "ms" << endl;
 }
-
-
 
 
 int main(int argc, const char * argv[]) {
